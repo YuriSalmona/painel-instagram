@@ -1,0 +1,687 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel do Instagram — Instituto Cerrados</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<style>
+  :root {
+    --ig1:#FEDA75; --ig2:#FA7E1E; --ig3:#D62976; --ig4:#962FBF; --ig5:#4F5BD5;
+    --ic:#004F23; --ic-claro:#2E7D4F;
+    --grad: linear-gradient(135deg,#FEDA75 0%,#FA7E1E 25%,#D62976 50%,#962FBF 75%,#4F5BD5 100%);
+    --fundo:#F6F6FA; --cartao:#FFFFFF; --texto:#14141F; --suave:#6B6B80; --linha:#E8E8F0;
+    --sombra:0 6px 24px rgba(30,20,60,.07); --sombra-forte:0 14px 40px rgba(150,47,191,.18);
+    --pos:#14915A; --neg:#D6336C;
+  }
+  [data-tema="escuro"] {
+    --fundo:#0E0E16; --cartao:#181824; --texto:#F2F2F7; --suave:#A0A0B8; --linha:#2A2A3A;
+    --sombra:0 6px 24px rgba(0,0,0,.35); --sombra-forte:0 14px 40px rgba(214,41,118,.25);
+    --pos:#3DDC97; --neg:#FF6B9A; --ic-claro:#5FBF86;
+  }
+  * { box-sizing:border-box; }
+  html, body { margin:0; background:var(--fundo); color:var(--texto);
+    font-family:'Plus Jakarta Sans',system-ui,sans-serif; transition:background .3s,color .3s; }
+  body { padding:0 0 40px; }
+  a { color:inherit; }
+
+  /* Cabeçalho */
+  .faixa { height:5px; background:var(--grad); }
+  .topo { display:flex; align-items:center; gap:16px; padding:18px 28px 10px; flex-wrap:wrap; }
+  .avatar { width:58px; height:58px; border-radius:50%; padding:3px; background:var(--grad); flex:none; }
+  .avatar img, .avatar span { width:100%; height:100%; border-radius:50%; border:3px solid var(--cartao);
+    object-fit:cover; display:flex; align-items:center; justify-content:center; background:var(--cartao); font-weight:800; }
+  .ident h1 { margin:0; font-size:24px; font-weight:800; letter-spacing:-.4px; }
+  .ident h1 b { background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .ident .sub { color:var(--suave); font-size:13px; margin-top:2px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .selo-ic { display:inline-flex; align-items:center; gap:6px; font-weight:700; color:var(--ic-claro); }
+  .selo-ic::before { content:""; width:9px; height:9px; border-radius:50%; background:var(--ic); box-shadow:0 0 0 3px rgba(0,79,35,.18); }
+  .espaco { flex:1; }
+  .botao-tema { border:1px solid var(--linha); background:var(--cartao); color:var(--texto); border-radius:999px;
+    padding:9px 14px; font-weight:600; font-size:13px; font-family:inherit; cursor:pointer; display:flex; gap:8px; align-items:center;
+    box-shadow:var(--sombra); transition:transform .2s; }
+  .botao-tema:hover { transform:translateY(-2px); }
+
+  /* Navegação */
+  .nav { position:sticky; top:0; z-index:20; background:color-mix(in srgb, var(--fundo) 88%, transparent);
+    backdrop-filter:blur(10px); padding:10px 28px; border-bottom:1px solid var(--linha);
+    display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+  .abas { display:flex; gap:4px; background:var(--cartao); padding:4px; border-radius:999px; box-shadow:var(--sombra); overflow-x:auto; }
+  .aba { border:0; background:transparent; color:var(--suave); padding:9px 16px; border-radius:999px; cursor:pointer;
+    font-weight:600; font-size:14px; font-family:inherit; white-space:nowrap; display:flex; gap:7px; align-items:center; transition:all .25s; }
+  .aba svg { width:16px; height:16px; }
+  .aba:hover { color:var(--texto); }
+  .aba.ativa { background:var(--grad); color:#fff; box-shadow:0 4px 14px rgba(214,41,118,.35); }
+  .chips { display:flex; gap:6px; flex-wrap:wrap; }
+  .chip { border:1px solid var(--linha); background:var(--cartao); color:var(--texto); border-radius:999px;
+    padding:7px 13px; font-weight:600; font-size:13px; font-family:inherit; cursor:pointer; transition:all .2s; }
+  .chip:hover { border-color:var(--ig3); }
+  .chip.ativo { background:var(--texto); color:var(--cartao); border-color:var(--texto); }
+  .rotulo-chips { color:var(--suave); font-size:12px; font-weight:600; margin-right:2px; }
+
+  main { padding:22px 28px 0; }
+  .painel { display:none; animation:entra .45s ease both; }
+  .painel.ativo { display:block; }
+  @keyframes entra { from { opacity:0; transform:translateY(10px);} to { opacity:1; transform:none; } }
+
+  /* Indicadores */
+  .kpis { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; }
+  .kpi { background:var(--cartao); border-radius:20px; padding:16px 18px 10px; box-shadow:var(--sombra);
+    position:relative; overflow:hidden; transition:transform .25s, box-shadow .25s; }
+  .kpi:hover { transform:translateY(-4px); box-shadow:var(--sombra-forte); }
+  .kpi::before { content:""; position:absolute; inset:0 0 auto 0; height:3px; background:var(--grad); opacity:.9; }
+  .kpi .cab { display:flex; justify-content:space-between; align-items:center; gap:8px; color:var(--suave); font-size:13px; font-weight:600; }
+  .kpi .ico { flex:none; }
+  .kpi .ico { width:30px; height:30px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+    background:color-mix(in srgb, var(--ig3) 12%, transparent); color:var(--ig3); }
+  .kpi .ico svg { width:17px; height:17px; }
+  .kpi .valor { font-size:30px; font-weight:800; letter-spacing:-.8px; margin:6px 0 2px; }
+  .kpi .delta { font-size:12px; font-weight:700; display:inline-flex; gap:4px; align-items:center; padding:2px 8px; border-radius:999px; }
+  .delta.pos { color:var(--pos); background:color-mix(in srgb, var(--pos) 13%, transparent); }
+  .delta.neg { color:var(--neg); background:color-mix(in srgb, var(--neg) 13%, transparent); }
+  .delta.neu { color:var(--suave); background:color-mix(in srgb, var(--suave) 12%, transparent); }
+  .kpi .nota { font-size:11.5px; color:var(--suave); margin-top:5px; min-height:15px; }
+  .kpi .spark { height:42px; margin:4px -6px -4px; }
+
+  /* Cartões e grades */
+  .grade2 { display:grid; grid-template-columns:2fr 1fr; gap:16px; margin-top:16px; }
+  .grade-meio { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px; }
+  .cartao { background:var(--cartao); border-radius:20px; padding:18px 20px; box-shadow:var(--sombra); min-width:0; }
+  .cartao h2 { margin:0 0 2px; font-size:16px; font-weight:800; }
+  .cartao .desc { color:var(--suave); font-size:12.5px; margin-bottom:8px; }
+  .grafico { height:300px; }
+  .grafico.baixo { height:250px; }
+
+  /* Melhor post */
+  .melhor { display:grid; grid-template-columns:150px 1fr; gap:16px; align-items:start; }
+  .melhor .foto { width:150px; aspect-ratio:1; border-radius:16px; overflow:hidden; position:relative; background:var(--linha); }
+  .melhor .foto img { width:100%; height:100%; object-fit:cover; }
+  .coroa { display:inline-flex; gap:6px; align-items:center; background:var(--grad); color:#fff; font-weight:800; font-size:12px;
+    padding:4px 10px; border-radius:999px; }
+  .melhor .legenda { font-size:13px; color:var(--suave); margin:8px 0; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+  .melhor .porque { font-size:13.5px; font-weight:600; margin:6px 0 10px; }
+  .metr { display:flex; gap:12px; flex-wrap:wrap; font-size:13px; font-weight:700; }
+  .metr span { display:inline-flex; gap:5px; align-items:center; }
+  .metr svg { width:15px; height:15px; color:var(--ig3); }
+  .link-post { display:inline-block; margin-top:10px; font-size:13px; font-weight:700; color:var(--ig3); text-decoration:none; }
+  .link-post:hover { text-decoration:underline; }
+
+  /* Feed */
+  .barra-feed { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+  select { font-family:inherit; font-weight:600; font-size:13px; padding:8px 12px; border-radius:12px; border:1px solid var(--linha);
+    background:var(--cartao); color:var(--texto); }
+  .feed { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:14px; }
+  .item { position:relative; aspect-ratio:1; border-radius:18px; overflow:hidden; cursor:pointer; background:var(--linha);
+    box-shadow:var(--sombra); opacity:0; transform:scale(.96); transition:transform .3s; animation:aparece .5s ease forwards; }
+  @keyframes aparece { to { opacity:1; transform:none; } }
+  .item img { width:100%; height:100%; object-fit:cover; transition:transform .5s; }
+  .item:hover img { transform:scale(1.07); }
+  .item.sem-foto { background:var(--grad); }
+  .sem-foto-ico { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,.9); }
+  .sem-foto-ico svg { width:56px; height:56px; }
+  .item .tipo { position:absolute; top:10px; left:10px; background:rgba(0,0,0,.55); color:#fff; font-size:11px; font-weight:700;
+    padding:4px 9px; border-radius:999px; backdrop-filter:blur(6px); }
+  .item .rank { position:absolute; top:10px; right:10px; background:var(--grad); color:#fff; font-size:11px; font-weight:800;
+    padding:4px 9px; border-radius:999px; }
+  .item .sobre { position:absolute; inset:0; background:linear-gradient(180deg,rgba(20,10,40,.15),rgba(20,10,40,.86));
+    color:#fff; display:flex; flex-direction:column; justify-content:flex-end; padding:14px; opacity:0; transition:opacity .3s; }
+  .item:hover .sobre, .item:focus-within .sobre { opacity:1; }
+  .sobre .alc { font-size:22px; font-weight:800; }
+  .sobre .alc small { font-size:12px; font-weight:600; opacity:.85; }
+  .sobre .linha-m { display:grid; grid-template-columns:repeat(2,1fr); gap:5px 10px; font-size:12.5px; font-weight:700; margin-top:8px; }
+  .sobre .linha-m span { display:flex; gap:5px; align-items:center; }
+  .sobre svg { width:14px; height:14px; }
+  .sobre .data { font-size:11.5px; opacity:.8; margin-top:8px; }
+  .vazio { color:var(--suave); padding:40px; text-align:center; }
+
+  /* Glossário */
+  .glossario { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:14px; }
+  .termo { background:var(--cartao); border-radius:18px; padding:16px 18px; box-shadow:var(--sombra); border-left:4px solid; border-image:var(--grad) 1; }
+  .termo h3 { margin:0 0 6px; font-size:15px; }
+  .termo p { margin:0; color:var(--suave); font-size:13.5px; line-height:1.5; }
+
+  .aviso { font-size:12px; color:var(--suave); margin-top:8px; }
+  .rodape { margin:34px 28px 0; padding-top:14px; border-top:1px solid var(--linha); color:var(--suave); font-size:12px;
+    display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+  .rodape .selo-ic { font-size:12px; }
+
+  .revela { opacity:0; transform:translateY(14px); transition:opacity .6s ease, transform .6s ease; }
+  .revela.visivel { opacity:1; transform:none; }
+
+  @media (max-width: 1100px) { .kpis { grid-template-columns:repeat(2,minmax(0,1fr)); } .grade2 { grid-template-columns:1fr; } }
+  @media (max-width: 720px) {
+    .topo, .nav, main { padding-left:16px; padding-right:16px; }
+    .topo { flex-wrap:nowrap; gap:12px; padding-top:14px; }
+    .avatar { width:46px; height:46px; }
+    .ident { min-width:0; }
+    .ident h1 { font-size:19px; }
+    .ident .sub { font-size:11.5px; gap:6px; }
+    .ident .sub span:nth-child(2), .ident .sub span:nth-child(4) { display:none; }
+    .botao-tema span { display:none; } .botao-tema { padding:9px; }
+    .nav { gap:8px; padding-top:8px; padding-bottom:8px; }
+    .rotulo-chips { display:none; }
+    .kpis { gap:10px; } .kpi { padding:12px 12px 6px; border-radius:16px; }
+    .grade-meio { grid-template-columns:1fr; }
+    .kpi .valor { font-size:24px; }
+    .melhor { grid-template-columns:1fr; } .melhor .foto { width:100%; max-width:260px; }
+    .feed { grid-template-columns:repeat(2,1fr); gap:8px; }
+    .aba span { display:none; } .aba { padding:9px 12px; }
+    .rodape { margin:30px 16px 0; }
+  }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation:none !important; transition:none !important; } .revela, .item { opacity:1; transform:none; } }
+</style>
+</head>
+<body>
+<div class="faixa"></div>
+<header class="topo">
+  <div class="avatar" id="avatar"><span>IC</span></div>
+  <div class="ident">
+    <h1>Painel do <b>Instagram</b></h1>
+    <div class="sub"><span id="usuario">@institutocerrados</span><span>·</span><span class="selo-ic">Instituto Cerrados</span><span>·</span><span id="atualizado"></span></div>
+  </div>
+  <div class="espaco"></div>
+  <button class="botao-tema" id="botao-tema" type="button" aria-label="Alternar tema claro ou escuro"></button>
+</header>
+
+<nav class="nav">
+  <div class="abas" role="tablist" id="abas"></div>
+  <div class="espaco"></div>
+  <div class="chips" id="chips-periodo"><span class="rotulo-chips">Período</span></div>
+  <div class="chips" id="chips-formato"><span class="rotulo-chips">Formato</span></div>
+</nav>
+
+<main>
+  <section class="painel" id="p-geral">
+    <div class="kpis" id="kpis"></div>
+    <div class="grade2">
+      <div class="cartao revela"><h2>Alcance diário da conta</h2><div class="desc">Contas únicas alcançadas a cada dia</div><div class="grafico" id="g-alcance"></div></div>
+      <div class="cartao revela" id="cartao-melhor"></div>
+    </div>
+    <div class="grade-meio">
+      <div class="cartao revela"><h2>Novos seguidores por dia</h2><div class="desc">Últimos 30 dias (limite da Meta para esta série)</div><div class="grafico baixo" id="g-seguidores"></div></div>
+      <div class="cartao revela"><h2>Desempenho por formato</h2><div class="desc">Alcance médio por post e quantidade de posts no período</div><div class="grafico baixo" id="g-formato"></div></div>
+    </div>
+    <div class="cartao revela" style="margin-top:16px"><h2>Interações por post</h2><div class="desc">Como cada post se saiu em curtidas, comentários, compartilhamentos e salvamentos</div><div class="grafico" id="g-interacoes"></div></div>
+  </section>
+
+  <section class="painel" id="p-posts">
+    <div class="barra-feed">
+      <div><h2 style="margin:0;font-size:18px">Feed do período</h2><div class="desc" style="color:var(--suave);font-size:13px" id="feed-resumo"></div></div>
+      <label style="font-size:13px;color:var(--suave);font-weight:600">Ordenar por
+        <select id="ordem">
+          <option value="data">Mais recentes</option>
+          <option value="alcance">Maior alcance</option>
+          <option value="engajamento">Maior engajamento</option>
+          <option value="compartilhamentos">Mais compartilhados</option>
+          <option value="comentarios">Mais comentados</option>
+          <option value="salvamentos">Mais salvos</option>
+        </select>
+      </label>
+    </div>
+    <div class="feed" id="feed"></div>
+  </section>
+
+  <section class="painel" id="p-quando">
+    <div class="cartao revela"><h2>Mapa de calor: dia × horário de publicação</h2><div class="desc">Alcance médio dos posts publicados em cada combinação. Quanto mais quente, mais alcance.</div><div class="grafico" id="g-calor" style="height:360px"></div>
+      <div class="aviso" id="aviso-calor"></div></div>
+    <div class="grade-meio">
+      <div class="cartao revela"><h2>Por dia da semana</h2><div class="desc">Alcance médio por post</div><div class="grafico baixo" id="g-dia"></div></div>
+      <div class="cartao revela"><h2>Por faixa de horário</h2><div class="desc">Alcance médio por post</div><div class="grafico baixo" id="g-hora"></div></div>
+    </div>
+  </section>
+
+  <section class="painel" id="p-publico">
+    <div class="grade-meio" style="margin-top:0">
+      <div class="cartao revela"><h2>Principais cidades</h2><div class="desc">Onde estão os seguidores</div><div class="grafico" id="g-cidades" style="height:380px"></div></div>
+      <div class="cartao revela"><h2>Idade e gênero</h2><div class="desc">Distribuição dos seguidores</div><div class="grafico" id="g-idade" style="height:380px"></div></div>
+    </div>
+    <div class="cartao revela" style="margin-top:16px"><h2>Países</h2><div class="desc">Seguidores fora do Brasil</div><div class="grafico baixo" id="g-paises"></div></div>
+  </section>
+
+  <section class="painel" id="p-ler">
+    <div class="glossario" id="glossario"></div>
+  </section>
+</main>
+
+<footer class="rodape">
+  <span class="selo-ic">Instituto Cerrados · Comunicação</span>
+  <span id="rodape-info"></span>
+</footer>
+
+<script>
+const DADOS = /*__DADOS__*/null;
+
+const ICONES = {
+  geral:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>',
+  posts:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
+  quando:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  publico:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 010 7M18.5 14.8c1.7.8 2.8 2.6 3.2 5.2"/></svg>',
+  ler:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 5a2 2 0 012-2h13v16H6a2 2 0 00-2 2z"/><path d="M4 19V5"/></svg>',
+  usuarios:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><path d="M19 8v6M16 11h6"/></svg>',
+  olho:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+  play:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><path d="M10 8.5l5.5 3.5-5.5 3.5z"/></svg>',
+  coracao:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 20s-7.5-4.6-9.3-9.2C1.4 7.4 3.6 4 7 4c2 0 3.6 1.1 5 3 1.4-1.9 3-3 5-3 3.4 0 5.6 3.4 4.3 6.8C19.5 15.4 12 20 12 20z"/></svg>',
+  balao:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 01-12.6 7.4L3 20.5l1.6-5.1A8.5 8.5 0 1121 11.5z"/></svg>',
+  aviao:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M22 3L9.5 13.5"/><path d="M22 3l-7 18-4-8-8-4z"/></svg>',
+  marcador:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg>',
+  faisca:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z"/></svg>',
+  sol:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
+  lua:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>',
+};
+const GRADIENTE = ['#FEDA75','#FA7E1E','#D62976','#962FBF','#4F5BD5'];
+const COR_FORMATO = { 'Reels':'#D62976', 'Carrossel':'#962FBF', 'Foto':'#FA7E1E', 'Vídeo':'#4F5BD5', 'Outro':'#9A9AB0' };
+const DIAS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const ORDEM_DIAS = [1,2,3,4,5,6,0];
+const FAIXAS = [['madrugada',0,6],['6h–9h',6,9],['9h–12h',9,12],['12h–15h',12,15],['15h–18h',15,18],['18h–21h',18,21],['21h–24h',21,24]];
+
+const fmt = new Intl.NumberFormat('pt-BR');
+const fmt1 = new Intl.NumberFormat('pt-BR', { maximumFractionDigits:1 });
+const pct = v => (v == null || isNaN(v)) ? '—' : new Intl.NumberFormat('pt-BR', { style:'percent', maximumFractionDigits:1 }).format(v);
+const num = v => (v == null || isNaN(v)) ? '—' : fmt.format(Math.round(v));
+
+const estado = { aba:'geral', periodo:30, formato:'Todos', ordem:'data', tema:'claro' };
+const graficos = {};
+
+function el(tag, attrs, ...filhos) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (k === 'class') n.className = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const f of filhos) if (f != null) n.append(f.nodeType ? f : document.createTextNode(String(f)));
+  return n;
+}
+const linkSeguro = u => (typeof u === 'string' && /^https:\/\//.test(u)) ? u : null;
+const css = nome => getComputedStyle(document.documentElement).getPropertyValue(nome).trim();
+
+/* ---------- Tema ---------- */
+function lerTema() {
+  try { const t = localStorage.getItem('tema-painel-ig'); if (t) return t; } catch (e) {}
+  return (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) ? 'escuro' : 'claro';
+}
+function aplicarTema(t) {
+  estado.tema = t;
+  document.documentElement.setAttribute('data-tema', t);
+  const b = document.getElementById('botao-tema');
+  b.innerHTML = (t === 'escuro' ? ICONES.sol + '<span>Modo claro</span>' : ICONES.lua + '<span>Modo escuro</span>');
+  try { localStorage.setItem('tema-painel-ig', t); } catch (e) {}
+}
+
+/* ---------- Dados por período ---------- */
+const hoje = DADOS ? new Date(DADOS.hoje + 'T00:00:00') : new Date();
+function noPeriodo(dataStr, dias, deslocamento = 0) {
+  const d = new Date(dataStr.slice(0, 10) + 'T00:00:00');
+  const fim = new Date(hoje); fim.setDate(fim.getDate() - dias * deslocamento);
+  const ini = new Date(fim); ini.setDate(ini.getDate() - dias);
+  return d >= ini && d < fim;
+}
+function postsFiltrados(deslocamento = 0) {
+  return DADOS.posts.filter(p => noPeriodo(p.data, estado.periodo, deslocamento) &&
+    (estado.formato === 'Todos' || p.formato === estado.formato));
+}
+const media = arr => { const v = arr.filter(x => x != null && !isNaN(x)); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
+function serieDiariaPosts(posts, campo) {
+  const mapa = {};
+  posts.forEach(p => { const d = p.data.slice(0, 10); mapa[d] = (mapa[d] || 0) + (p[campo] || 0); });
+  return diasDoPeriodo().map(d => mapa[d] || 0);
+}
+function diasDoPeriodo() {
+  const out = [];
+  for (let i = estado.periodo; i >= 1; i--) { const d = new Date(hoje); d.setDate(d.getDate() - i); out.push(d.toISOString().slice(0, 10)); }
+  return out;
+}
+
+/* ---------- Contadores animados ---------- */
+function contar(no, alvo, formatador) {
+  if (alvo == null || isNaN(alvo)) { no.textContent = '—'; return; }
+  const dur = 1100, t0 = performance.now(), inicio = 0;
+  const passo = t => {
+    const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+    no.textContent = formatador(inicio + (alvo - inicio) * e);
+    if (k < 1) requestAnimationFrame(passo); else no.textContent = formatador(alvo);
+  };
+  requestAnimationFrame(passo);
+}
+
+/* ---------- ECharts ---------- */
+function base() {
+  return {
+    textStyle:{ fontFamily:'Plus Jakarta Sans, system-ui, sans-serif', color:css('--suave') },
+    animationDuration:1200, animationEasing:'cubicOut',
+    tooltip:{ trigger:'axis', backgroundColor:css('--cartao'), borderColor:css('--linha'), textStyle:{ color:css('--texto') },
+      extraCssText:'border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.15);' },
+    grid:{ left:8, right:12, top:24, bottom:8, containLabel:true },
+  };
+}
+const eixo = extra => Object.assign({ axisLine:{ lineStyle:{ color:css('--linha') } }, axisTick:{ show:false },
+  axisLabel:{ color:css('--suave') }, splitLine:{ lineStyle:{ color:css('--linha'), type:'dashed' } } }, extra || {});
+const gradV = (c1, c2) => new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset:0, color:c1 }, { offset:1, color:c2 }]);
+const gradH = () => new echarts.graphic.LinearGradient(0, 0, 1, 0, GRADIENTE.map((c, i) => ({ offset:i / 4, color:c })));
+
+function desenhar(id, opcao) {
+  const no = document.getElementById(id);
+  if (!no || !window.echarts) return;
+  if (graficos[id]) graficos[id].dispose();
+  graficos[id] = echarts.init(no, null, { renderer:'canvas' });
+  graficos[id].setOption(opcao);
+}
+
+/* ---------- Indicadores ---------- */
+function delta(atual, anterior, inverter) {
+  if (atual == null || !anterior) return el('span', { class:'delta neu' }, 'sem comparação');
+  const v = (atual - anterior) / anterior;
+  const classe = Math.abs(v) < 0.005 ? 'neu' : ((v > 0) !== !!inverter ? 'pos' : 'neg');
+  return el('span', { class:'delta ' + classe }, (v > 0 ? '▲ ' : v < 0 ? '▼ ' : '') + pct(Math.abs(v)) + ' vs. anterior');
+}
+function renderKpis() {
+  const per = DADOS.periodos[String(estado.periodo)] || { atual:{}, anterior:{} };
+  const a = per.atual, b = per.anterior;
+  const posts = postsFiltrados(), postsAnt = postsFiltrados(1);
+  const engA = media(posts.map(p => p.engajamento)), engB = media(postsAnt.map(p => p.engajamento));
+  const saldo = (a.novos || 0) - (a.deixaram || 0);
+  const alcSerie = (DADOS.serie_alcance || []).filter(([d]) => noPeriodo(d, estado.periodo)).map(x => x[1]);
+  const segSerie = (DADOS.serie_seguidores || []).filter(([d]) => noPeriodo(d, estado.periodo)).map(x => x[1]);
+  const cards = [
+    { t:'Seguidores', ico:ICONES.usuarios, v:DADOS.perfil.seguidores, d:el('span', { class:'delta ' + (saldo > 0 ? 'pos' : saldo < 0 ? 'neg' : 'neu') }, (saldo > 0 ? '+' : '') + num(saldo) + ' no período'),
+      nota:'saldo = novos − deixaram de seguir', spark:segSerie },
+    { t:'Novos seguidores', ico:ICONES.faisca, v:a.novos, d:delta(a.novos, b.novos), nota:num(a.deixaram) + ' deixaram de seguir', spark:segSerie },
+    { t:'Alcance', ico:ICONES.olho, v:a.reach, d:delta(a.reach, b.reach), nota:estado.periodo > 30 ? 'soma de janelas de 30 dias' : 'contas únicas', spark:alcSerie },
+    { t:'Visualizações', ico:ICONES.play, v:a.views, d:delta(a.views, b.views), nota:'vezes que o conteúdo foi exibido', spark:serieDiariaPosts(posts, 'visualizacoes') },
+    { t:'Interações', ico:ICONES.coracao, v:a.total_interactions, d:delta(a.total_interactions, b.total_interactions), nota:num(a.likes) + ' curtidas · ' + num(a.saves) + ' salvamentos', spark:serieDiariaPosts(posts, 'interacoes') },
+    { t:'Compartilhamentos', ico:ICONES.aviao, v:a.shares, d:delta(a.shares, b.shares), nota:'o que leva o post para fora da bolha', spark:serieDiariaPosts(posts, 'compartilhamentos') },
+    { t:'Comentários', ico:ICONES.balao, v:a.comments, d:delta(a.comments, b.comments), nota:'conversas geradas', spark:serieDiariaPosts(posts, 'comentarios') },
+    { t:'Engajamento médio', ico:ICONES.marcador, v:engA, d:delta(engA, engB), nota:posts.length + ' posts · interações ÷ alcance', spark:posts.slice().reverse().map(p => p.engajamento || 0), pct:true },
+  ];
+  const caixa = document.getElementById('kpis'); caixa.innerHTML = '';
+  cards.forEach((c, i) => {
+    const valor = el('div', { class:'valor' }, '0');
+    const spark = el('div', { class:'spark', id:'spark-' + i });
+    const card = el('div', { class:'kpi revela' },
+      el('div', { class:'cab' }, el('span', {}, c.t), el('span', { class:'ico', html:c.ico })),
+      valor, c.d, el('div', { class:'nota' }, c.nota), spark);
+    card.style.transitionDelay = (i * 60) + 'ms';
+    caixa.append(card);
+    contar(valor, c.v, c.pct ? pct : num);
+    requestAnimationFrame(() => desenhar('spark-' + i, {
+      animationDuration:1400, grid:{ left:0, right:0, top:4, bottom:0 },
+      xAxis:{ type:'category', show:false, boundaryGap:false, data:c.spark.map((_, k) => k) },
+      yAxis:{ type:'value', show:false, min:'dataMin' },
+      series:[{ type:'line', data:c.spark, smooth:true, symbol:'none', lineStyle:{ width:2, color:gradH() },
+        areaStyle:{ color:gradV('rgba(214,41,118,.28)', 'rgba(214,41,118,0)') } }],
+    }));
+  });
+  observarRevelacao();
+}
+
+/* ---------- Visão geral ---------- */
+function renderGeral() {
+  renderKpis();
+  const serie = (DADOS.serie_alcance || []).filter(([d]) => noPeriodo(d, estado.periodo));
+  desenhar('g-alcance', Object.assign(base(), {
+    xAxis:eixo({ type:'category', boundaryGap:false, data:serie.map(x => x[0].slice(8, 10) + '/' + x[0].slice(5, 7)), splitLine:{ show:false } }),
+    yAxis:eixo({ type:'value' }),
+    series:[{ name:'Alcance', type:'line', smooth:true, data:serie.map(x => x[1]), symbol:'circle', symbolSize:6, showSymbol:serie.length <= 31,
+      lineStyle:{ width:3, color:gradH() }, itemStyle:{ color:'#D62976' },
+      areaStyle:{ color:gradV('rgba(150,47,191,.35)', 'rgba(254,218,117,.02)') } }],
+  }));
+
+  const seg = DADOS.serie_seguidores || [];
+  desenhar('g-seguidores', Object.assign(base(), {
+    xAxis:eixo({ type:'category', data:seg.map(x => x[0].slice(8, 10) + '/' + x[0].slice(5, 7)), splitLine:{ show:false } }),
+    yAxis:eixo({ type:'value', minInterval:1 }),
+    series:[{ name:'Novos seguidores', type:'bar', data:seg.map(x => x[1]), barWidth:'62%',
+      itemStyle:{ borderRadius:[6, 6, 0, 0], color:gradV('#D62976', '#962FBF') },
+      animationDelay:i => i * 25 }],
+  }));
+
+  const posts = postsFiltrados();
+  const formatos = [...new Set(posts.map(p => p.formato))];
+  const resumo = formatos.map(f => {
+    const g = posts.filter(p => p.formato === f);
+    return { f, n:g.length, alc:media(g.map(p => p.alcance)) || 0 };
+  }).sort((a, b) => b.alc - a.alc);
+  desenhar('g-formato', Object.assign(base(), {
+    tooltip:Object.assign(base().tooltip, { trigger:'item' }),
+    legend:{ show:false },
+    xAxis:eixo({ type:'value', axisLabel:{ show:false } }),
+    yAxis:eixo({ type:'category', data:resumo.map(r => r.f), splitLine:{ show:false }, inverse:true }),
+    grid:{ left:8, right:110, top:10, bottom:8, containLabel:true },
+    series:[
+      { name:'Alcance médio', type:'bar', data:resumo.map(r => ({ value:Math.round(r.alc), itemStyle:{ color:COR_FORMATO[r.f] || '#999', borderRadius:[0, 8, 8, 0] } })),
+        barWidth:'52%', label:{ show:true, position:'right', color:css('--texto'), fontWeight:700, formatter:p => num(p.value) + '  ·  ' + resumo[p.dataIndex].n + ' posts' } },
+    ],
+  }));
+
+  const ordenados = posts.slice().sort((a, b) => a.data.localeCompare(b.data));
+  const rot = ordenados.map(p => p.data.slice(8, 10) + '/' + p.data.slice(5, 7) + ' · ' + p.formato);
+  const pilha = (nome, campo, cor) => ({ name:nome, type:'bar', stack:'t', barMaxWidth:48, data:ordenados.map(p => p[campo] || 0), itemStyle:{ color:cor },
+    emphasis:{ focus:'series' }, animationDelay:i => i * 40 });
+  desenhar('g-interacoes', Object.assign(base(), {
+    legend:{ top:0, textStyle:{ color:css('--suave') }, icon:'roundRect' },
+    grid:{ left:8, right:12, top:36, bottom:8, containLabel:true },
+    xAxis:eixo({ type:'category', data:rot, axisLabel:{ color:css('--suave'), rotate:rot.length > 8 ? 35 : 0, fontSize:11 }, splitLine:{ show:false } }),
+    yAxis:eixo({ type:'value' }),
+    series:[pilha('Curtidas', 'curtidas', '#FA7E1E'), pilha('Comentários', 'comentarios', '#D62976'),
+      pilha('Compartilhamentos', 'compartilhamentos', '#962FBF'), pilha('Salvamentos', 'salvamentos', '#4F5BD5')],
+  }));
+  renderMelhor(posts);
+}
+
+function renderMelhor(posts) {
+  const caixa = document.getElementById('cartao-melhor'); caixa.innerHTML = '';
+  caixa.append(el('h2', {}, 'Melhor post do período'));
+  const validos = posts.filter(p => p.alcance != null);
+  if (!validos.length) { caixa.append(el('div', { class:'vazio' }, 'Nenhum post neste período.')); return; }
+  const top = validos.reduce((a, b) => (b.alcance > a.alcance ? b : a));
+  const mAlc = media(validos.map(p => p.alcance));
+  const taxa = (p, c) => p.alcance ? (p[c] || 0) / p.alcance : 0;
+  const motivos = [];
+  if (validos.length > 1 && mAlc) motivos.push(fmt1.format(top.alcance / mAlc) + '× o alcance médio do período');
+  const mShare = media(validos.map(p => taxa(p, 'compartilhamentos'))), mSave = media(validos.map(p => taxa(p, 'salvamentos')));
+  if (mShare && taxa(top, 'compartilhamentos') > mShare * 1.2) motivos.push('foi muito compartilhado');
+  if (mSave && taxa(top, 'salvamentos') > mSave * 1.2) motivos.push('foi salvo acima da média');
+  if (top.formato === 'Reels' && top.tempo_reels) motivos.push('retenção média de ' + fmt1.format(top.tempo_reels) + ' s');
+  const foto = el('div', { class:'foto' });
+  if (linkSeguro(top.imagem)) foto.append(el('img', { src:top.imagem, alt:'Miniatura do post', loading:'lazy', referrerpolicy:'no-referrer' }));
+  const info = el('div', {},
+    el('span', { class:'coroa' }, '★ ' + top.formato + ' · ' + top.data.slice(8, 10) + '/' + top.data.slice(5, 7)),
+    el('div', { class:'legenda' }, top.legenda || '(sem legenda)'),
+    el('div', { class:'porque' }, motivos.length ? 'Por que se destacou: ' + motivos.join(', ') + '.' : 'Post de maior alcance do período.'),
+    el('div', { class:'metr' },
+      el('span', { html:ICONES.olho }, num(top.alcance)), el('span', { html:ICONES.coracao }, num(top.curtidas)),
+      el('span', { html:ICONES.balao }, num(top.comentarios)), el('span', { html:ICONES.aviao }, num(top.compartilhamentos)),
+      el('span', { html:ICONES.marcador }, num(top.salvamentos))));
+  const link = linkSeguro(top.link);
+  if (link) info.append(el('a', { class:'link-post', href:link, target:'_blank', rel:'noopener' }, 'Abrir no Instagram →'));
+  caixa.append(el('div', { class:'melhor' }, foto, info));
+}
+
+/* ---------- Posts ---------- */
+function renderPosts() {
+  const posts = postsFiltrados();
+  const chave = estado.ordem;
+  const ordenados = posts.slice().sort((a, b) => chave === 'data' ? b.data.localeCompare(a.data) : (b[chave] || 0) - (a[chave] || 0));
+  const rankAlc = posts.slice().sort((a, b) => (b.alcance || 0) - (a.alcance || 0)).map(p => p.id);
+  document.getElementById('feed-resumo').textContent =
+    posts.length + ' posts · alcance médio ' + num(media(posts.map(p => p.alcance))) + ' · engajamento médio ' + pct(media(posts.map(p => p.engajamento)));
+  const feed = document.getElementById('feed'); feed.innerHTML = '';
+  if (!ordenados.length) { feed.append(el('div', { class:'vazio' }, 'Nenhum post neste período e formato.')); return; }
+  ordenados.forEach((p, i) => {
+    const link = linkSeguro(p.link);
+    const item = el('a', { class:'item', href:link || '#', target:'_blank', rel:'noopener', title:p.legenda || '' });
+    item.style.animationDelay = Math.min(i * 45, 900) + 'ms';
+    const semFoto = () => { item.classList.add('sem-foto'); item.insertAdjacentHTML('afterbegin', '<div class="sem-foto-ico">' + ICONES.play + '</div>'); };
+    if (linkSeguro(p.imagem)) {
+      const img = el('img', { src:p.imagem, alt:'Miniatura do post', loading:'lazy', referrerpolicy:'no-referrer' });
+      img.addEventListener('error', () => { img.remove(); semFoto(); });
+      item.append(img);
+    } else semFoto();
+    item.append(el('span', { class:'tipo' }, p.formato));
+    const pos = rankAlc.indexOf(p.id);
+    if (pos > -1 && pos < 3) item.append(el('span', { class:'rank' }, '#' + (pos + 1) + ' alcance'));
+    const m = (ico, v) => { const s = el('span', { html:ico }); s.append(num(v)); return s; };
+    item.append(el('div', { class:'sobre' },
+      el('div', { class:'alc' }, num(p.alcance), el('small', {}, '  alcance')),
+      el('div', { class:'linha-m' }, m(ICONES.coracao, p.curtidas), m(ICONES.balao, p.comentarios),
+        m(ICONES.aviao, p.compartilhamentos), m(ICONES.marcador, p.salvamentos)),
+      el('div', { class:'data' }, p.data.slice(8, 10) + '/' + p.data.slice(5, 7) + '/' + p.data.slice(0, 4) + ' ' + p.data.slice(11, 16) +
+        ' · engajamento ' + pct(p.engajamento))));
+    feed.append(item);
+  });
+}
+
+/* ---------- Quando publicar ---------- */
+function faixaDe(h) { return FAIXAS.findIndex(([, a, b]) => h >= a && h < b); }
+function renderQuando() {
+  const posts = postsFiltrados().filter(p => p.alcance != null);
+  const soma = {}, cont = {};
+  posts.forEach(p => {
+    const d = new Date(p.data), dia = ORDEM_DIAS.indexOf(d.getDay()), fx = faixaDe(d.getHours());
+    const k = dia + ',' + fx; soma[k] = (soma[k] || 0) + p.alcance; cont[k] = (cont[k] || 0) + 1;
+  });
+  const dados = Object.keys(soma).map(k => { const [x, y] = k.split(',').map(Number); return [y, x, Math.round(soma[k] / cont[k]), cont[k]]; });
+  const max = Math.max(1, ...dados.map(d => d[2]));
+  desenhar('g-calor', Object.assign(base(), {
+    tooltip:{ trigger:'item', backgroundColor:css('--cartao'), borderColor:css('--linha'), textStyle:{ color:css('--texto') },
+      formatter:p => ORDEM_DIAS.map(i => DIAS[i])[p.value[1]] + ', ' + FAIXAS[p.value[0]][0] + '<br><b>' + num(p.value[2]) + '</b> de alcance médio<br>' + p.value[3] + ' post(s)' },
+    grid:{ left:8, right:20, top:10, bottom:60, containLabel:true },
+    xAxis:{ type:'category', data:FAIXAS.map(f => f[0]), splitArea:{ show:true }, axisLabel:{ color:css('--suave') }, axisLine:{ show:false }, axisTick:{ show:false } },
+    yAxis:{ type:'category', data:ORDEM_DIAS.map(i => DIAS[i]), splitArea:{ show:true }, axisLabel:{ color:css('--suave') }, axisLine:{ show:false }, axisTick:{ show:false }, inverse:true },
+    visualMap:{ min:0, max, dimension:2, calculable:true, orient:'horizontal', left:'center', bottom:0, inRange:{ color:['#FFF4D6', '#FEDA75', '#FA7E1E', '#D62976', '#962FBF'] },
+      textStyle:{ color:css('--suave') }, formatter:v => num(v) },
+    series:[{ type:'heatmap', data:dados, label:{ show:true, formatter:p => num(p.value[2]), color:'#1b1b1b', fontWeight:700 },
+      itemStyle:{ borderRadius:10, borderColor:css('--cartao'), borderWidth:4 }, emphasis:{ itemStyle:{ shadowBlur:16, shadowColor:'rgba(214,41,118,.5)' } } }],
+  }));
+  document.getElementById('aviso-calor').textContent = 'Base: ' + posts.length + ' posts no período. Com poucos posts por célula, um único post forte puxa a média — use como pista para testar, não como regra. Amplie o período para mais base.';
+
+  const porDia = ORDEM_DIAS.map(i => { const g = posts.filter(p => new Date(p.data).getDay() === i); return { n:g.length, v:media(g.map(p => p.alcance)) || 0 }; });
+  desenhar('g-dia', Object.assign(base(), {
+    xAxis:eixo({ type:'category', data:ORDEM_DIAS.map(i => DIAS[i]), splitLine:{ show:false } }), yAxis:eixo({ type:'value' }),
+    tooltip:Object.assign(base().tooltip, { formatter:p => p[0].name + '<br><b>' + num(p[0].value) + '</b> de alcance médio<br>' + porDia[p[0].dataIndex].n + ' post(s)' }),
+    series:[{ type:'bar', data:porDia.map(d => Math.round(d.v)), barWidth:'55%', itemStyle:{ borderRadius:[8, 8, 0, 0], color:gradV('#FA7E1E', '#D62976') }, animationDelay:i => i * 60 }],
+  }));
+  const porFaixa = FAIXAS.map(f => { const g = posts.filter(p => faixaDe(new Date(p.data).getHours()) === FAIXAS.indexOf(f)); return { n:g.length, v:media(g.map(p => p.alcance)) || 0 }; });
+  desenhar('g-hora', Object.assign(base(), {
+    xAxis:eixo({ type:'category', data:FAIXAS.map(f => f[0]), splitLine:{ show:false }, axisLabel:{ color:css('--suave'), fontSize:11 } }), yAxis:eixo({ type:'value' }),
+    tooltip:Object.assign(base().tooltip, { formatter:p => p[0].name + '<br><b>' + num(p[0].value) + '</b> de alcance médio<br>' + porFaixa[p[0].dataIndex].n + ' post(s)' }),
+    series:[{ type:'bar', data:porFaixa.map(d => Math.round(d.v)), barWidth:'55%', itemStyle:{ borderRadius:[8, 8, 0, 0], color:gradV('#962FBF', '#4F5BD5') }, animationDelay:i => i * 60 }],
+  }));
+}
+
+/* ---------- Público ---------- */
+function renderPublico() {
+  const pub = DADOS.publico || {};
+  const cid = (pub.cidades || []).slice(0, 10);
+  desenhar('g-cidades', Object.assign(base(), {
+    grid:{ left:8, right:60, top:8, bottom:8, containLabel:true },
+    xAxis:eixo({ type:'value', axisLabel:{ show:false } }),
+    yAxis:eixo({ type:'category', inverse:true, data:cid.map(c => c[0].split(',')[0]), splitLine:{ show:false }, axisLabel:{ color:css('--texto'), fontWeight:600 } }),
+    series:[{ type:'bar', data:cid.map(c => c[1]), barWidth:'58%', itemStyle:{ borderRadius:[0, 10, 10, 0], color:gradH() },
+      label:{ show:true, position:'right', color:css('--texto'), fontWeight:700, formatter:p => num(p.value) }, animationDelay:i => i * 70 }],
+  }));
+  const ig = pub.idade_genero || [];
+  const faixas = [...new Set(ig.map(r => r[0]))].sort();
+  const serieG = (g, nome, cor) => ({ name:nome, type:'bar', data:faixas.map(f => (ig.find(r => r[0] === f && r[1] === g) || [0, 0, 0])[2]),
+    itemStyle:{ borderRadius:[6, 6, 0, 0], color:cor }, animationDelay:i => i * 70 });
+  desenhar('g-idade', Object.assign(base(), {
+    legend:{ top:0, textStyle:{ color:css('--suave') }, icon:'roundRect' }, grid:{ left:8, right:12, top:36, bottom:8, containLabel:true },
+    xAxis:eixo({ type:'category', data:faixas, splitLine:{ show:false } }), yAxis:eixo({ type:'value' }),
+    series:[serieG('F', 'Mulheres', '#D62976'), serieG('M', 'Homens', '#4F5BD5'), serieG('U', 'Não informado', '#B8B8C8')],
+  }));
+  const pais = (pub.paises || []).filter(p => p[0] !== 'BR').slice(0, 8);
+  const nomes = (() => { try { return new Intl.DisplayNames(['pt-BR'], { type:'region' }); } catch (e) { return null; } })();
+  desenhar('g-paises', Object.assign(base(), {
+    xAxis:eixo({ type:'category', data:pais.map(p => nomes ? nomes.of(p[0]) : p[0]), splitLine:{ show:false } }), yAxis:eixo({ type:'value' }),
+    series:[{ type:'bar', data:pais.map(p => p[1]), barWidth:'50%', itemStyle:{ borderRadius:[8, 8, 0, 0], color:gradV('#962FBF', '#FA7E1E') },
+      label:{ show:true, position:'top', color:css('--texto'), fontWeight:700 }, animationDelay:i => i * 70 }],
+  }));
+}
+
+/* ---------- Glossário ---------- */
+const TERMOS = [
+  ['Alcance', 'Contas únicas que viram algum conteúdo. Quem viu três vezes conta uma. Em períodos acima de 30 dias é a soma de janelas de 30 dias, porque a Meta só deduplica dentro de 30 dias.'],
+  ['Visualizações', 'Quantas vezes o conteúdo foi exibido, contando repetições.'],
+  ['Novos seguidores × deixaram de seguir', 'Quantas contas começaram e quantas deixaram de seguir no período. O saldo é o crescimento real.'],
+  ['Interações', 'Curtidas, comentários, compartilhamentos e salvamentos somados.'],
+  ['Compartilhamentos', 'O principal motor de alcance fora dos seguidores: é o que faz um post “viralizar”.'],
+  ['Salvamentos', 'Sinal de conteúdo útil: a pessoa quer voltar a ele depois.'],
+  ['Engajamento', 'Interações ÷ alcance, na média dos posts. Mostra que fração de quem viu reagiu.'],
+  ['Comparação', 'As setas comparam o período escolhido com o período anterior de mesmo tamanho.'],
+  ['Mapa de calor', 'Alcance médio dos posts por dia e horário de publicação. Com poucos posts, é pista para testar, não regra.'],
+  ['Público', 'Cidades, países, idade e gênero dos seguidores, segundo a Meta. Ajuda a ajustar linguagem e temas.'],
+  ['Atualização', 'Os dados vêm direto da Meta e se renovam a cada 3 horas. Stories não entram: a Meta só os guarda por 24 horas.'],
+  ['Posts recentes', 'Nas primeiras 48 horas o post ainda acumula alcance. Para comparar, prefira posts com mais de 7 dias.'],
+];
+function renderGlossario() {
+  const g = document.getElementById('glossario'); g.innerHTML = '';
+  TERMOS.forEach(([t, d], i) => { const c = el('div', { class:'termo revela' }, el('h3', {}, t), el('p', {}, d)); c.style.transitionDelay = (i * 40) + 'ms'; g.append(c); });
+  observarRevelacao();
+}
+
+/* ---------- Revelação ao rolar ---------- */
+let observador;
+function observarRevelacao() {
+  if (!('IntersectionObserver' in window)) { document.querySelectorAll('.revela').forEach(n => n.classList.add('visivel')); return; }
+  observador = observador || new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visivel'); observador.unobserve(e.target); } }), { threshold:.08 });
+  document.querySelectorAll('.revela:not(.visivel)').forEach(n => observador.observe(n));
+}
+
+/* ---------- Navegação ---------- */
+const ABAS = [['geral', 'Visão geral'], ['posts', 'Posts'], ['quando', 'Quando publicar'], ['publico', 'Público'], ['ler', 'Como ler']];
+const RENDER = { geral:renderGeral, posts:renderPosts, quando:renderQuando, publico:renderPublico, ler:renderGlossario };
+function irPara(aba) {
+  estado.aba = aba;
+  document.querySelectorAll('.aba').forEach(b => { const on = b.dataset.aba === aba; b.classList.toggle('ativa', on); b.setAttribute('aria-selected', on); });
+  document.querySelectorAll('.painel').forEach(p => p.classList.toggle('ativo', p.id === 'p-' + aba));
+  const sem = aba === 'publico' || aba === 'ler';
+  document.getElementById('chips-formato').style.display = sem ? 'none' : '';
+  document.getElementById('chips-periodo').style.display = sem ? 'none' : '';
+  requestAnimationFrame(() => { RENDER[aba](); observarRevelacao(); });
+  try { localStorage.setItem('aba-painel-ig', aba); } catch (e) {}
+}
+function montarNavegacao() {
+  const abas = document.getElementById('abas');
+  ABAS.forEach(([id, nome]) => {
+    const b = el('button', { class:'aba', type:'button', role:'tab', 'data-aba':id, html:ICONES[id] + '<span></span>' });
+    b.querySelector('span').textContent = nome; b.title = nome;
+    b.addEventListener('click', () => irPara(id)); abas.append(b);
+  });
+  const cp = document.getElementById('chips-periodo');
+  [7, 30, 90, 180].forEach(d => {
+    const c = el('button', { class:'chip' + (d === estado.periodo ? ' ativo' : ''), type:'button' }, d + ' dias');
+    c.addEventListener('click', () => { estado.periodo = d; cp.querySelectorAll('.chip').forEach(x => x.classList.toggle('ativo', x === c)); irPara(estado.aba); });
+    cp.append(c);
+  });
+  const cf = document.getElementById('chips-formato');
+  ['Todos', ...new Set(DADOS.posts.map(p => p.formato))].forEach(f => {
+    const c = el('button', { class:'chip' + (f === estado.formato ? ' ativo' : ''), type:'button' }, f);
+    c.addEventListener('click', () => { estado.formato = f; cf.querySelectorAll('.chip').forEach(x => x.classList.toggle('ativo', x === c)); irPara(estado.aba); });
+    cf.append(c);
+  });
+  document.getElementById('ordem').addEventListener('change', e => { estado.ordem = e.target.value; renderPosts(); });
+  document.getElementById('botao-tema').addEventListener('click', () => { aplicarTema(estado.tema === 'escuro' ? 'claro' : 'escuro'); irPara(estado.aba); });
+}
+
+/* ---------- Início ---------- */
+function iniciar() {
+  aplicarTema(lerTema());
+  if (!DADOS) { document.querySelector('main').textContent = 'Sem dados.'; return; }
+  const p = DADOS.perfil;
+  document.getElementById('usuario').textContent = '@' + (p.usuario || 'institutocerrados');
+  document.getElementById('atualizado').textContent = 'dados de ' + DADOS.gerado_em;
+  document.getElementById('rodape-info').textContent = num(p.seguidores) + ' seguidores · ' + num(p.posts) + ' posts publicados · fonte: API oficial da Meta';
+  if (linkSeguro(p.foto)) { const av = document.getElementById('avatar'); av.innerHTML = ''; av.append(el('img', { src:p.foto, alt:'Foto do perfil', referrerpolicy:'no-referrer' })); }
+  montarNavegacao();
+  let inicial = 'geral';
+  try { const a = localStorage.getItem('aba-painel-ig'); if (a && RENDER[a]) inicial = a; } catch (e) {}
+  irPara(inicial);
+  window.addEventListener('resize', () => Object.values(graficos).forEach(g => g && g.resize()));
+}
+if (window.echarts) iniciar(); else window.addEventListener('load', iniciar);
+</script>
+</body>
+</html>

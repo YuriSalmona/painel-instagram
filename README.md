@@ -18,3 +18,4 @@ streamlit run app.py
 ```
 
 Sem o bloco `[auth]` nos secrets o app roda sem login (dev local).
+
