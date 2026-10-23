@@ -143,6 +143,37 @@
   .termo p { margin:0; color:var(--suave); font-size:13.5px; line-height:1.5; }
 
   .aviso { font-size:12px; color:var(--suave); margin-top:8px; }
+
+  /* O que funciona */
+  .insights { display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:14px; }
+  .insight { background:var(--cartao); border-radius:18px; padding:16px 18px; box-shadow:var(--sombra); position:relative; overflow:hidden; }
+  .insight::before { content:""; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--grad); }
+  .insight .rot { font-size:11.5px; font-weight:800; text-transform:uppercase; letter-spacing:.6px; color:var(--ig3); margin-bottom:6px; display:flex; gap:6px; align-items:center; }
+  .insight .rot svg { width:15px; height:15px; }
+  .insight p { margin:0; font-size:14.5px; font-weight:600; line-height:1.45; }
+  .insight .base { font-size:12px; color:var(--suave); margin-top:6px; font-weight:500; }
+  .cab-cartao { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap; }
+  .metricas-chips { display:flex; gap:6px; flex-wrap:wrap; }
+  .metricas-chips .chip { padding:5px 11px; font-size:12px; }
+  .grade3 { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; margin-top:16px; }
+  .titulo-secao { margin:26px 0 4px; font-size:18px; font-weight:800; }
+  .sub-secao { color:var(--suave); font-size:13px; margin-bottom:12px; }
+
+  /* Referências */
+  .tabela-ref { width:100%; border-collapse:separate; border-spacing:0 8px; font-size:13.5px; }
+  .tabela-ref th { text-align:left; color:var(--suave); font-weight:700; font-size:12px; padding:0 10px; }
+  .tabela-ref td { background:var(--fundo); padding:10px; }
+  .tabela-ref td:first-child { border-radius:14px 0 0 14px; } .tabela-ref td:last-child { border-radius:0 14px 14px 0; }
+  .tabela-ref tr.nos td { background:color-mix(in srgb, var(--ig3) 10%, var(--fundo)); font-weight:700; }
+  .perfil-cel { display:flex; gap:10px; align-items:center; }
+  .mini-av { width:34px; height:34px; border-radius:50%; padding:2px; background:var(--grad); flex:none; }
+  .mini-av img, .mini-av span { width:100%; height:100%; border-radius:50%; object-fit:cover; display:flex; align-items:center; justify-content:center;
+    background:var(--cartao); border:2px solid var(--cartao); font-size:11px; font-weight:800; }
+  .barra-taxa { height:8px; border-radius:8px; background:var(--grad); min-width:4px; }
+  .rolagem { overflow-x:auto; }
+  .item .perfil-tag { position:absolute; bottom:auto; top:10px; right:10px; background:rgba(0,0,0,.55); color:#fff; font-size:11px; font-weight:700;
+    padding:4px 9px; border-radius:999px; backdrop-filter:blur(6px); max-width:60%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .sobre .leg { font-size:12px; font-weight:500; opacity:.92; margin-top:6px; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
   .rodape { margin:34px 28px 0; padding-top:14px; border-top:1px solid var(--linha); color:var(--suave); font-size:12px;
     display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; }
   .rodape .selo-ic { font-size:12px; }
@@ -150,7 +181,7 @@
   .revela { opacity:0; transform:translateY(14px); transition:opacity .6s ease, transform .6s ease; }
   .revela.visivel { opacity:1; transform:none; }
 
-  @media (max-width: 1100px) { .kpis { grid-template-columns:repeat(2,minmax(0,1fr)); } .grade2 { grid-template-columns:1fr; } }
+  @media (max-width: 1100px) { .kpis { grid-template-columns:repeat(2,minmax(0,1fr)); } .grade2 { grid-template-columns:1fr; } .grade3 { grid-template-columns:repeat(2,minmax(0,1fr)); } }
   @media (max-width: 720px) {
     .topo, .nav, main { padding-left:16px; padding-right:16px; }
     .topo { flex-wrap:nowrap; gap:12px; padding-top:14px; }
@@ -163,7 +194,7 @@
     .nav { gap:8px; padding-top:8px; padding-bottom:8px; }
     .rotulo-chips { display:none; }
     .kpis { gap:10px; } .kpi { padding:12px 12px 6px; border-radius:16px; }
-    .grade-meio { grid-template-columns:1fr; }
+    .grade-meio, .grade3 { grid-template-columns:1fr; }
     .kpi .valor { font-size:24px; }
     .melhor { grid-template-columns:1fr; } .melhor .foto { width:100%; max-width:260px; }
     .feed { grid-template-columns:repeat(2,1fr); gap:8px; }
@@ -223,6 +254,50 @@
     <div class="feed" id="feed"></div>
   </section>
 
+  <section class="painel" id="p-funciona">
+    <h2 class="titulo-secao" style="margin-top:0">O que está funcionando</h2>
+    <div class="sub-secao" id="funciona-base"></div>
+    <div class="insights" id="insights"></div>
+
+    <div class="cartao revela" style="margin-top:18px">
+      <div class="cab-cartao">
+        <div><h2>Temas</h2><div class="desc">Média por post, pelo tema principal de cada legenda</div></div>
+        <div class="metricas-chips" id="chips-metrica"></div>
+      </div>
+      <div class="grafico" id="g-temas" style="height:360px"></div>
+    </div>
+    <div class="grade-meio">
+      <div class="cartao revela"><h2>Abordagens</h2><div class="desc">Como o conteúdo foi apresentado (mesma métrica escolhida acima)</div><div class="grafico" id="g-tipos"></div></div>
+      <div class="cartao revela"><h2>Tema × formato</h2><div class="desc">Quais combinações rendem mais. O número pequeno é a quantidade de posts.</div><div class="grafico" id="g-combo"></div></div>
+    </div>
+    <h2 class="titulo-secao">Detalhes que fazem diferença</h2>
+    <div class="sub-secao">Mesma métrica, comparando características da legenda e do post</div>
+    <div class="grade3">
+      <div class="cartao revela"><h2>Tamanho da legenda</h2><div class="grafico baixo" id="g-at-leg"></div></div>
+      <div class="cartao revela"><h2>Abertura</h2><div class="grafico baixo" id="g-at-perg"></div></div>
+      <div class="cartao revela"><h2>Hashtags</h2><div class="grafico baixo" id="g-at-tag"></div></div>
+      <div class="cartao revela"><h2>Fotos no carrossel</h2><div class="grafico baixo" id="g-at-fotos"></div></div>
+    </div>
+    <div class="aviso">Temas e abordagens são identificados automaticamente por palavras-chave nas legendas. Com poucos posts por grupo, trate os resultados como pistas para testar.</div>
+  </section>
+
+  <section class="painel" id="p-refs">
+    <h2 class="titulo-secao" style="margin-top:0">Perfis de referência</h2>
+    <div class="sub-secao">Organizações próximas ao IC. A Meta não mostra o alcance de outros perfis, então a comparação usa <b>curtidas + comentários ÷ seguidores</b> nos últimos posts de cada um.</div>
+    <div class="insights" id="ref-resumo" style="margin-bottom:16px"></div>
+    <div class="cartao revela rolagem"><table class="tabela-ref" id="tabela-ref"></table></div>
+    <div class="grade-meio">
+      <div class="cartao revela"><h2>Formatos que mais engajam nas referências</h2><div class="desc">Média de curtidas + comentários ÷ seguidores</div><div class="grafico baixo" id="g-ref-formato"></div></div>
+      <div class="cartao revela"><h2>Temas que mais engajam nas referências</h2><div class="desc">Mesma classificação usada nos nossos posts</div><div class="grafico baixo" id="g-ref-temas"></div></div>
+    </div>
+    <div class="barra-feed" style="margin-top:22px">
+      <div><h2 style="margin:0;font-size:18px">Em alta nas referências</h2><div class="desc" style="color:var(--suave);font-size:13px">Posts dos últimos 60 dias com maior engajamento proporcional</div></div>
+      <label style="font-size:13px;color:var(--suave);font-weight:600">Perfil <select id="filtro-ref"></select></label>
+    </div>
+    <div class="feed" id="feed-ref"></div>
+    <div class="aviso" id="aviso-ref"></div>
+  </section>
+
   <section class="painel" id="p-quando">
     <div class="cartao revela"><h2>Mapa de calor: dia × horário de publicação</h2><div class="desc">Alcance médio dos posts publicados em cada combinação. Quanto mais quente, mais alcance.</div><div class="grafico" id="g-calor" style="height:360px"></div>
       <div class="aviso" id="aviso-calor"></div></div>
@@ -259,6 +334,8 @@ const ICONES = {
   quando:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
   publico:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 010 7M18.5 14.8c1.7.8 2.8 2.6 3.2 5.2"/></svg>',
   ler:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 5a2 2 0 012-2h13v16H6a2 2 0 00-2 2z"/><path d="M4 19V5"/></svg>',
+  funciona:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 00-3.6 10.8c.6.5 1 1.2 1 2V17h5.2v-1.2c0-.8.4-1.5 1-2A6 6 0 0012 3z"/></svg>',
+  refs:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>',
   usuarios:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><path d="M19 8v6M16 11h6"/></svg>',
   olho:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
   play:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><path d="M10 8.5l5.5 3.5-5.5 3.5z"/></svg>',
@@ -281,7 +358,14 @@ const fmt1 = new Intl.NumberFormat('pt-BR', { maximumFractionDigits:1 });
 const pct = v => (v == null || isNaN(v)) ? '—' : new Intl.NumberFormat('pt-BR', { style:'percent', maximumFractionDigits:1 }).format(v);
 const num = v => (v == null || isNaN(v)) ? '—' : fmt.format(Math.round(v));
 
-const estado = { aba:'geral', periodo:30, formato:'Todos', ordem:'data', tema:'claro' };
+const estado = { aba:'geral', periodo:30, formato:'Todos', ordem:'data', tema:'claro', metrica:'alcance', refPerfil:'Todos' };
+const METRICAS = {
+  alcance:{ nome:'Alcance', f:p => p.alcance, fmt:v => num(v) },
+  compartilhamentos:{ nome:'Compartilhamentos', f:p => p.compartilhamentos, fmt:v => fmt1.format(v) },
+  salvamentos:{ nome:'Salvamentos', f:p => p.salvamentos, fmt:v => fmt1.format(v) },
+  comentarios:{ nome:'Comentários', f:p => p.comentarios, fmt:v => fmt1.format(v) },
+  engajamento:{ nome:'Engajamento', f:p => p.engajamento, fmt:v => pct(v) },
+};
 const graficos = {};
 
 function el(tag, attrs, ...filhos) {
@@ -366,6 +450,7 @@ function desenhar(id, opcao) {
   const no = document.getElementById(id);
   if (!no || !window.echarts) return;
   if (graficos[id]) graficos[id].dispose();
+  no.innerHTML = '';
   graficos[id] = echarts.init(no, null, { renderer:'canvas' });
   graficos[id].setOption(opcao);
 }
@@ -534,6 +619,197 @@ function renderPosts() {
   });
 }
 
+/* ---------- O que funciona ---------- */
+function agrupar(posts, chave, f) {
+  const g = {};
+  posts.forEach(p => { const k = typeof chave === 'function' ? chave(p) : p[chave]; if (k == null) return; (g[k] = g[k] || []).push(p); });
+  return Object.entries(g).map(([nome, lista]) => ({ nome, n:lista.length, media:media(lista.map(f)) }))
+    .filter(x => x.media != null).sort((a, b) => b.media - a.media);
+}
+const vezes = (v, m) => fmt1.format(v / m) + '×';
+const difPct = (a, b) => { const d = (a - b) / b; return (d >= 0 ? '+' : '−') + pct(Math.abs(d)); };
+function insightCard(rotulo, texto, base, ico) {
+  const c = el('div', { class:'insight revela' }, el('div', { class:'rot', html:(ico || ICONES.faisca) }), el('p', {}, texto), el('div', { class:'base' }, base));
+  c.querySelector('.rot').append(rotulo);
+  return c;
+}
+function faixaLegenda(n) { return n < 400 ? 'Curta (até 400)' : n <= 900 ? 'Média (400–900)' : 'Longa (900+)'; }
+function faixaTags(n) { return n === 0 ? 'Sem hashtag' : n <= 3 ? '1 a 3' : '4 ou mais'; }
+function faixaFotos(n) { return n == null ? null : n <= 3 ? '2 a 3 fotos' : n <= 6 ? '4 a 6 fotos' : '7 ou mais'; }
+
+function barrasMetrica(id, grupos, met, horizontal) {
+  const nomes = grupos.map(g => g.nome), vals = grupos.map(g => g.media);
+  const rot = { show:true, position:horizontal ? 'right' : 'top', color:css('--texto'), fontWeight:700, fontSize:11,
+    formatter:p => met.fmt(p.value) + ' · ' + grupos[p.dataIndex].n };
+  const serie = { type:'bar', data:vals, barMaxWidth:42, label:rot, animationDelay:i => i * 60,
+    itemStyle:{ borderRadius:horizontal ? [0, 10, 10, 0] : [8, 8, 0, 0], color:horizontal ? gradH() : gradV('#FA7E1E', '#962FBF') } };
+  const tooltip = Object.assign(base().tooltip, { formatter:p => p[0].name + '<br><b>' + met.fmt(p[0].value) + '</b> em média<br>' + grupos[p[0].dataIndex].n + ' post(s)' });
+  desenhar(id, Object.assign(base(), horizontal ? {
+    tooltip, grid:{ left:8, right:90, top:8, bottom:8, containLabel:true },
+    xAxis:eixo({ type:'value', axisLabel:{ show:false } }),
+    yAxis:eixo({ type:'category', inverse:true, data:nomes, splitLine:{ show:false }, axisLabel:{ color:css('--texto'), fontWeight:600 } }),
+    series:[serie],
+  } : {
+    tooltip, grid:{ left:8, right:8, top:26, bottom:8, containLabel:true },
+    xAxis:eixo({ type:'category', data:nomes, splitLine:{ show:false }, axisLabel:{ color:css('--suave'), fontSize:11, interval:0 } }),
+    yAxis:eixo({ type:'value', axisLabel:{ show:false } }),
+    series:[serie],
+  }));
+}
+
+function renderFunciona() {
+  const met = METRICAS[estado.metrica];
+  const posts = postsFiltrados().filter(p => p.alcance != null);
+  document.getElementById('funciona-base').textContent = posts.length + ' posts nos últimos ' + estado.periodo + ' dias' +
+    (estado.formato !== 'Todos' ? ' (' + estado.formato + ')' : '') + (estado.periodo < 90 ? ' — dica: use 90 ou 180 dias para ter mais base.' : '.');
+
+  const cp = document.getElementById('chips-metrica'); cp.innerHTML = '';
+  Object.entries(METRICAS).forEach(([k, m]) => {
+    const c = el('button', { class:'chip' + (k === estado.metrica ? ' ativo' : ''), type:'button' }, m.nome);
+    c.addEventListener('click', () => { estado.metrica = k; renderFunciona(); });
+    cp.append(c);
+  });
+
+  const caixa = document.getElementById('insights'); caixa.innerHTML = '';
+  if (posts.length < 4) {
+    caixa.append(insightCard('Pouca base', 'Há só ' + posts.length + ' posts neste período. Escolha 90 ou 180 dias para enxergar padrões.', 'Os insights precisam de pelo menos 4 posts.'));
+  } else {
+    const mAlc = media(posts.map(p => p.alcance));
+    const temas = agrupar(posts, 'tema', p => p.alcance).filter(g => g.n >= 2);
+    if (temas.length) caixa.append(insightCard('Tema que mais alcança',
+      temas[0].nome + ' alcança ' + vezes(temas[0].media, mAlc) + ' a média dos nossos posts.', 'Base: ' + temas[0].n + ' posts com esse tema principal.', ICONES.olho));
+    const taxaComp = p => p.alcance ? (p.compartilhamentos || 0) / p.alcance : null;
+    const mComp = media(posts.map(taxaComp));
+    const temasComp = agrupar(posts, 'tema', taxaComp).filter(g => g.n >= 2);
+    if (temasComp.length && mComp) caixa.append(insightCard('Tema que mais se espalha',
+      temasComp[0].nome + ': ' + pct(temasComp[0].media) + ' de quem vê compartilha (média geral ' + pct(mComp) + ').',
+      'Compartilhamento é o que leva o post para além dos seguidores.', ICONES.aviao));
+    const tipos = agrupar(posts.filter(p => p.tipo !== 'Outros'), 'tipo', p => p.alcance).filter(g => g.n >= 2);
+    if (tipos.length) caixa.append(insightCard('Abordagem que funciona',
+      tipos[0].nome + ' rende ' + vezes(tipos[0].media, mAlc) + ' o alcance médio.', 'Base: ' + tipos[0].n + ' posts.', ICONES.faisca));
+    const combos = agrupar(posts, p => p.tema + ' em ' + p.formato, p => p.alcance).filter(g => g.n >= 2);
+    if (combos.length) caixa.append(insightCard('Combinação campeã',
+      combos[0].nome + ': ' + num(combos[0].media) + ' de alcance médio.', 'Base: ' + combos[0].n + ' posts. Bom ponto de partida para a pauta.', ICONES.play));
+    const comP = posts.filter(p => p.pergunta), semP = posts.filter(p => !p.pergunta);
+    if (comP.length >= 2 && semP.length >= 2) {
+      const a = media(comP.map(p => p.alcance)), b = media(semP.map(p => p.alcance));
+      caixa.append(insightCard('Gancho com pergunta',
+        'Posts que abrem com pergunta têm ' + difPct(a, b) + ' de alcance em relação aos que não abrem.', comP.length + ' com pergunta · ' + semP.length + ' sem.', ICONES.balao));
+    }
+    const pouco = agrupar(posts, 'tema', p => p.alcance).filter(g => g.n === 1 && g.media > mAlc * 1.3);
+    if (pouco.length) caixa.append(insightCard('Vale testar mais',
+      pouco[0].nome + ' teve um post com ' + vezes(pouco[0].media, mAlc) + ' a média, mas quase não aparece na pauta.', 'Com 1 post é só uma pista: repita para confirmar.', ICONES.funciona));
+    const refs = ((DADOS.referencias || {}).perfis || []).flatMap(r => r.posts.map(p => Object.assign({ seg:r.seguidores }, p)));
+    const refTemas = agrupar(refs.filter(p => p.tema !== 'Outros'), 'tema', p => p.taxa).filter(g => g.n >= 3);
+    if (refTemas.length) {
+      const nossos = posts.filter(p => p.tema === refTemas[0].nome).length;
+      caixa.append(insightCard('Tendência nas referências',
+        'Nos perfis de referência, ' + refTemas[0].nome + ' é o tema que mais engaja — e ocupa ' + pct(nossos / posts.length) + ' da nossa pauta no período.',
+        'Base: ' + refTemas[0].n + ' posts de outros perfis.', ICONES.refs));
+    }
+  }
+
+  barrasMetrica('g-temas', agrupar(posts, 'tema', met.f), met, true);
+  barrasMetrica('g-tipos', agrupar(posts, 'tipo', met.f), met, true);
+
+  const temasC = [...new Set(posts.map(p => p.tema))], formatosC = [...new Set(posts.map(p => p.formato))];
+  const cel = [];
+  temasC.forEach((t, y) => formatosC.forEach((f, x) => {
+    const g = posts.filter(p => p.tema === t && p.formato === f);
+    const v = media(g.map(met.f));
+    if (g.length && v != null) cel.push([x, y, v, g.length]);
+  }));
+  desenhar('g-combo', Object.assign(base(), {
+    tooltip:{ trigger:'item', backgroundColor:css('--cartao'), borderColor:css('--linha'), textStyle:{ color:css('--texto') },
+      formatter:p => temasC[p.value[1]] + ' em ' + formatosC[p.value[0]] + '<br><b>' + met.fmt(p.value[2]) + '</b> em média<br>' + p.value[3] + ' post(s)' },
+    grid:{ left:8, right:12, top:8, bottom:8, containLabel:true },
+    xAxis:{ type:'category', data:formatosC, axisLabel:{ color:css('--suave') }, axisLine:{ show:false }, axisTick:{ show:false } },
+    yAxis:{ type:'category', data:temasC, axisLabel:{ color:css('--texto'), fontSize:11 }, axisLine:{ show:false }, axisTick:{ show:false } },
+    visualMap:{ show:false, min:0, max:Math.max(...cel.map(c => c[2]), 0.0001), dimension:2, inRange:{ color:['#FFF4D6', '#FEDA75', '#FA7E1E', '#D62976', '#962FBF'] } },
+    series:[{ type:'heatmap', data:cel, label:{ show:true, color:'#1b1b1b', fontWeight:700, fontSize:11, formatter:p => met.fmt(p.value[2]) + '\n' + p.value[3] },
+      itemStyle:{ borderRadius:8, borderColor:css('--cartao'), borderWidth:3 } }],
+  }));
+
+  barrasMetrica('g-at-leg', agrupar(posts, p => faixaLegenda(p.tam_legenda || 0), met.f).sort((a, b) => a.nome.localeCompare(b.nome)), met, false);
+  barrasMetrica('g-at-perg', agrupar(posts, p => p.pergunta ? 'Abre com pergunta' : 'Sem pergunta', met.f), met, false);
+  barrasMetrica('g-at-tag', agrupar(posts, p => faixaTags(p.hashtags || 0), met.f), met, false);
+  const fotos = agrupar(posts.filter(p => p.n_fotos), p => faixaFotos(p.n_fotos), met.f);
+  if (fotos.length) barrasMetrica('g-at-fotos', fotos, met, false);
+  else { if (graficos['g-at-fotos']) graficos['g-at-fotos'].dispose(); document.getElementById('g-at-fotos').innerHTML = '<div class="vazio">Sem carrosséis no período.</div>'; }
+  observarRevelacao();
+}
+
+/* ---------- Referências ---------- */
+function renderRefs() {
+  const R = DADOS.referencias || { perfis:[], falhas:[] };
+  const nossos = DADOS.posts.slice(0, 30).map(p => Object.assign({}, p, { taxa:DADOS.perfil.seguidores ? ((p.curtidas || 0) + (p.comentarios || 0)) / DADOS.perfil.seguidores : null }));
+  const linhas = [{ usuario:DADOS.perfil.usuario, nome:'Instituto Cerrados (nós)', seguidores:DADOS.perfil.seguidores, foto:DADOS.perfil.foto, posts:nossos, nos:true }]
+    .concat(R.perfis).map(r => {
+      const d30 = r.posts.filter(p => noPeriodo(p.data, 30)).length;
+      const porF = agrupar(r.posts, 'formato', p => p.taxa);
+      return Object.assign({}, r, { taxa:media(r.posts.map(p => p.taxa)), d30, melhorF:porF.length ? porF[0].nome : '—' });
+    }).sort((a, b) => (b.taxa || 0) - (a.taxa || 0));
+  const resumo = document.getElementById('ref-resumo'); resumo.innerHTML = '';
+  const nosL = linhas.find(l => l.nos), outros = linhas.filter(l => !l.nos);
+  if (nosL && outros.length) {
+    const freq = media(outros.map(l => l.d30)), taxaRef = media(outros.map(l => l.taxa));
+    const pos = linhas.indexOf(nosL) + 1;
+    resumo.append(insightCard('Frequência', 'Publicamos ' + nosL.d30 + ' posts nos últimos 30 dias; as referências publicaram ' + fmt1.format(freq) + ' em média.',
+      'Constância é um dos fatores que o Instagram mais premia na distribuição.', ICONES.quando));
+    resumo.append(insightCard('Engajamento', 'Nosso engajamento por post é ' + pct(nosL.taxa) + ' — ' + pos + 'º de ' + linhas.length + ' (média das referências: ' + pct(taxaRef) + ').',
+      'Curtidas + comentários ÷ seguidores, nos últimos posts de cada perfil.', ICONES.coracao));
+    const formatosRef = agrupar(outros.flatMap(l => l.posts), 'formato', p => p.taxa);
+    if (formatosRef.length) resumo.append(insightCard('Formato em alta', formatosRef[0].nome + ' é o formato que mais engaja nos perfis de referência (' + pct(formatosRef[0].media) + ' por post).',
+      'Base: ' + formatosRef[0].n + ' posts.', ICONES.play));
+  }
+  const maxT = Math.max(...linhas.map(l => l.taxa || 0), 0.0001);
+  const t = document.getElementById('tabela-ref'); t.innerHTML = '';
+  t.append(el('tr', {}, ...['Perfil', 'Seguidores', 'Posts em 30 dias', 'Engajamento por post', '', 'Formato que mais engaja'].map(h => el('th', {}, h))));
+  linhas.forEach(l => {
+    const av = el('div', { class:'mini-av' });
+    if (linkSeguro(l.foto)) av.append(el('img', { src:l.foto, alt:'', referrerpolicy:'no-referrer' })); else av.append(el('span', {}, (l.usuario || '?').slice(0, 2).toUpperCase()));
+    const nome = el('div', {}, el('div', { style:'font-weight:700' }, l.nome || l.usuario), el('div', { style:'color:var(--suave);font-size:12px' }, '@' + l.usuario));
+    const barra = el('div', { class:'barra-taxa' }); barra.style.width = Math.max(4, 120 * (l.taxa || 0) / maxT) + 'px';
+    t.append(el('tr', { class:l.nos ? 'nos' : '' }, el('td', {}, el('div', { class:'perfil-cel' }, av, nome)), el('td', {}, num(l.seguidores)),
+      el('td', {}, String(l.d30)), el('td', {}, pct(l.taxa)), el('td', {}, barra), el('td', {}, l.melhorF)));
+  });
+
+  const refs = R.perfis.flatMap(r => r.posts.map(p => Object.assign({ perfil:r.usuario }, p)));
+  const metT = { fmt:v => pct(v) };
+  barrasMetrica('g-ref-formato', agrupar(refs, 'formato', p => p.taxa), metT, true);
+  barrasMetrica('g-ref-temas', agrupar(refs.filter(p => p.tema !== 'Outros'), 'tema', p => p.taxa).filter(g => g.n >= 2).slice(0, 8), metT, true);
+
+  const sel = document.getElementById('filtro-ref');
+  if (!sel.options.length) {
+    ['Todos', ...R.perfis.map(r => r.usuario)].forEach(u => sel.append(el('option', { value:u }, u === 'Todos' ? 'Todos os perfis' : '@' + u)));
+    sel.addEventListener('change', e => { estado.refPerfil = e.target.value; renderRefs(); });
+  }
+  sel.value = estado.refPerfil;
+  const emAlta = refs.filter(p => noPeriodo(p.data, 60) && p.taxa != null && (estado.refPerfil === 'Todos' || p.perfil === estado.refPerfil))
+    .sort((a, b) => b.taxa - a.taxa).slice(0, 24);
+  const feed = document.getElementById('feed-ref'); feed.innerHTML = '';
+  if (!emAlta.length) feed.append(el('div', { class:'vazio' }, 'Nenhum post recente para este filtro.'));
+  emAlta.forEach((p, i) => {
+    const link = linkSeguro(p.link);
+    const item = el('a', { class:'item', href:link || '#', target:'_blank', rel:'noopener' });
+    item.style.animationDelay = Math.min(i * 40, 900) + 'ms';
+    const semFoto = () => { item.classList.add('sem-foto'); item.insertAdjacentHTML('afterbegin', '<div class="sem-foto-ico">' + ICONES.play + '</div>'); };
+    if (linkSeguro(p.imagem)) { const img = el('img', { src:p.imagem, alt:'', loading:'lazy', referrerpolicy:'no-referrer' }); img.addEventListener('error', () => { img.remove(); semFoto(); }); item.append(img); }
+    else semFoto();
+    item.append(el('span', { class:'tipo' }, p.formato), el('span', { class:'perfil-tag' }, '@' + p.perfil));
+    const m = (ico, v) => { const s = el('span', { html:ico }); s.append(num(v)); return s; };
+    item.append(el('div', { class:'sobre' },
+      el('div', { class:'alc' }, pct(p.taxa), el('small', {}, '  engajamento')),
+      el('div', { class:'linha-m' }, m(ICONES.coracao, p.curtidas), m(ICONES.balao, p.comentarios)),
+      el('div', { class:'leg' }, p.legenda || ''),
+      el('div', { class:'data' }, p.tema + ' · ' + p.data.slice(8, 10) + '/' + p.data.slice(5, 7))));
+    feed.append(item);
+  });
+  document.getElementById('aviso-ref').textContent = (R.falhas && R.falhas.length ? 'Não foi possível ler: @' + R.falhas.join(', @') + ' (conta privada, pessoal ou nome alterado). ' : '') +
+    'Perfis atualizados a cada 12 horas. Para trocar a lista, peça para editar REFERENCIAS no app.py.';
+  observarRevelacao();
+}
+
 /* ---------- Quando publicar ---------- */
 function faixaDe(h) { return FAIXAS.findIndex(([, a, b]) => h >= a && h < b); }
 function renderQuando() {
@@ -613,6 +889,9 @@ const TERMOS = [
   ['Comparação', 'As setas comparam o período escolhido com o período anterior de mesmo tamanho.'],
   ['Mapa de calor', 'Alcance médio dos posts por dia e horário de publicação. Com poucos posts, é pista para testar, não regra.'],
   ['Público', 'Cidades, países, idade e gênero dos seguidores, segundo a Meta. Ajuda a ajustar linguagem e temas.'],
+  ['Tema principal', 'Assunto do post (Água, Fogo e brigadas, Povos e comunidades…), identificado por palavras-chave na legenda, com peso maior para o começo do texto.'],
+  ['Abordagem', 'Como o conteúdo é apresentado: data comemorativa, bastidores, educativo (“você sabia”), chamada para ação, conquista ou série/entrevista.'],
+  ['Engajamento nas referências', 'Curtidas + comentários ÷ seguidores. A Meta não mostra o alcance de outros perfis, então esta é a medida comparável entre contas de tamanhos diferentes.'],
   ['Atualização', 'Os dados vêm direto da Meta e se renovam a cada 3 horas. Stories não entram: a Meta só os guarda por 24 horas.'],
   ['Posts recentes', 'Nas primeiras 48 horas o post ainda acumula alcance. Para comparar, prefira posts com mais de 7 dias.'],
 ];
@@ -631,13 +910,14 @@ function observarRevelacao() {
 }
 
 /* ---------- Navegação ---------- */
-const ABAS = [['geral', 'Visão geral'], ['posts', 'Posts'], ['quando', 'Quando publicar'], ['publico', 'Público'], ['ler', 'Como ler']];
-const RENDER = { geral:renderGeral, posts:renderPosts, quando:renderQuando, publico:renderPublico, ler:renderGlossario };
+const ABAS = [['geral', 'Visão geral'], ['posts', 'Posts'], ['funciona', 'O que funciona'], ['quando', 'Quando publicar'],
+  ['refs', 'Referências'], ['publico', 'Público'], ['ler', 'Como ler']];
+const RENDER = { geral:renderGeral, posts:renderPosts, funciona:renderFunciona, quando:renderQuando, refs:renderRefs, publico:renderPublico, ler:renderGlossario };
 function irPara(aba) {
   estado.aba = aba;
   document.querySelectorAll('.aba').forEach(b => { const on = b.dataset.aba === aba; b.classList.toggle('ativa', on); b.setAttribute('aria-selected', on); });
   document.querySelectorAll('.painel').forEach(p => p.classList.toggle('ativo', p.id === 'p-' + aba));
-  const sem = aba === 'publico' || aba === 'ler';
+  const sem = aba === 'publico' || aba === 'ler' || aba === 'refs';
   document.getElementById('chips-formato').style.display = sem ? 'none' : '';
   document.getElementById('chips-periodo').style.display = sem ? 'none' : '';
   requestAnimationFrame(() => { RENDER[aba](); observarRevelacao(); });

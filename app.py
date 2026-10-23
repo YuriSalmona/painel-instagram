@@ -15,11 +15,15 @@ roda sem login.
 import json
 import os
 import pathlib
+import re
+import threading
+import unicodedata
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta, timezone
 
 import requests
 import streamlit as st
+from streamlit.runtime.scriptrunner import add_script_run_ctx, get_script_run_ctx
 
 st.set_page_config(
     page_title="Painel do Instagram — Instituto Cerrados",
@@ -41,6 +45,95 @@ BRASILIA = timezone(timedelta(hours=-3))
 PERIODOS = [7, 30, 90, 180]
 METRICAS_CONTA = "reach,views,accounts_engaged,total_interactions,likes,comments,shares,saves"
 DIAS_HISTORICO = 2 * max(PERIODOS)
+
+# Perfis de referência (aba "Referências"). Para trocar, edite esta lista com
+# o @ exato de contas profissionais (comerciais ou de criador) do Instagram.
+REFERENCIAS = [
+    "ispn_brasil", "rede.cerrado", "cerradodepe", "funatura", "mapbiomasbrasil",
+    "ipam_amazonia", "socioambiental", "observatoriodoclima", "wwfbrasil", "sosmataatlantica",
+]
+POSTS_POR_REFERENCIA = 30
+
+# Classificação por palavras-chave (sem acento, minúsculas; casam como início
+# de palavra). Um post pode ter mais de um tema e mais de uma abordagem.
+TEMAS = {
+    "Fogo e brigadas": ["fogo", "incendi", "queima", "brigad", "mif", "manejo integrado", "suindara", "foco de calor", "focos de"],
+    "Água": ["agua!", "aguas!", "hidric", "recarga", "nascente", "chuva", "seca!", "secas!", "rio!", "rios!", "apcac", "apiac", "aprhic",
+             "coracao das aguas", "elo das aguas", "sao francisco", "vereda", "aquifero"],
+    "RPPN e áreas protegidas": ["rppn", "reserva particular", "mosaico", "unidade de conservacao", "unidades de conservacao",
+                                "area protegida", "areas protegidas", "jurema", "parque nacional"],
+    "Povos e comunidades": ["povos", "comunidades tradicionais", "comunidade tradicional", "indigena", "quilombo",
+                            "quilombola", "kalunga", "pcts", "territorio", "acampamento terra livre"],
+    "Biodiversidade": ["biodivers", "especie", "fauna", "flora", "lobo-guara", "tamandua", "tatu", "coruja",
+                       "chuveirinho", "vida selvagem", "aves", "planta"],
+    "Clima e carbono": ["clima", "climatic", "carbono", "el nino", "aquecimento", "cop30", "cop 30", "emisso"],
+    "Educação ambiental": ["escola", "educa", "estudante", "aluno", "vivencia", "educador", "eixao", "oficina"],
+    "Políticas e incidência": ["projeto de lei", "pl!", "congresso", "senado", "ministerio", "politica publica",
+                               "politicas publicas", "governo", "jornal nacional", "codigo florestal", "desmatamento"],
+    "Restauração": ["restaura", "semente", "exotica", "pinus", "eucalipto", "recuperacao", "plantio", "mudas!"],
+    "Institucional": ["instituto cerrados completa", "15 anos", "nossa equipe", "equipe", "aniversario", "boas festas",
+                      "retrospectiva", "nossa logo", "parcerias", "gratidao"],
+}
+TIPOS = {
+    "Data comemorativa": ["dia mundial", "dia nacional", "dia internacional", "dia do cerrado", "dia da ", "dia do ", "dia dos "],
+    "Bastidores e eventos": ["estivemos", "participamos", "esteve em", "esteve presente", "evento", "encontro",
+                             "roda de conversa", "visita", "capacitacao", "reunimos", "ja estamos", "estaremos"],
+    "Educativo (você sabia)": ["voce sabia", "voce sabe", "sabia que", "entenda", "saiba", "o que e", "o que sao", "explica"],
+    "Chamada para ação": ["vote", "votou", "votar", "ajude", "sua ajuda", "inscreva", "participe", "link na bio",
+                          "convida", "assine", "compartilhe"],
+    "Conquista e anúncio": ["criada oficialmente", "criacao oficial", "reconhecido", "anunciamos", "conquista",
+                            "finalista", "foi criada", "lancamento", "lancamos"],
+    "Série e entrevista": ["serie", "entrevista", "neste video", "episodio", "presidente do", "diretor"],
+}
+
+
+def _normalizar(texto):
+    t = unicodedata.normalize("NFD", (texto or "").lower())
+    return " " + "".join(ch for ch in t if unicodedata.category(ch) != "Mn") + " "
+
+
+def _ocorrencias(texto_norm, termos):
+    """Conta termos que casam no início de palavra; "!" no fim exige palavra inteira."""
+    total = 0
+    for t in termos:
+        inteira = t.endswith("!")
+        padrao = r"(?<![a-z0-9])" + re.escape(t.rstrip("!")) + (r"(?![a-z0-9])" if inteira else "")
+        total += len(re.findall(padrao, texto_norm))
+    return total
+
+
+# Frases fixas de rodapé que se repetem em quase todo post e distorceriam a
+# classificação (ex.: convite para o canal de transmissão).
+_RODAPES = [r"entre no nosso grupo de transmissao.*", r"baixe o suindara.*"]
+
+
+def _pontuar(legenda, dicionario):
+    """Peso 3 para o que aparece na abertura (primeiros 250 caracteres)."""
+    t = _normalizar(legenda)
+    for r in _RODAPES:
+        t = re.sub(r, " ", t)
+    abertura = t[:250]
+    pontos = {nome: _ocorrencias(t, termos) + 2 * _ocorrencias(abertura, termos) for nome, termos in dicionario.items()}
+    presentes = [n for n, p in sorted(pontos.items(), key=lambda kv: -kv[1]) if p > 0]
+    return (presentes[0] if presentes else "Outros"), (presentes or ["Outros"])
+
+
+def classificar(legenda):
+    """Devolve (tema principal, todos os temas, abordagem principal, todas as abordagens)."""
+    tema, temas = _pontuar(legenda, TEMAS)
+    tipo, tipos = _pontuar(legenda, TIPOS)
+    return tema, temas, tipo, tipos
+
+
+def atributos(legenda):
+    bruto = legenda or ""
+    primeira = re.split(r"[.!\n]", bruto.strip(), maxsplit=1)[0] if bruto.strip() else ""
+    return {
+        "tam_legenda": len(bruto),
+        "pergunta": "?" in primeira[:200],
+        "hashtags": len(re.findall(r"#\w+", bruto)),
+        "mencoes": len(re.findall(r"@[\w.]+", bruto)),
+    }
 
 
 # --- Login ------------------------------------------------------------------
@@ -183,7 +276,7 @@ def _insights_post(token, p):
 
 def _posts(token, desde):
     campos = ("id,caption,timestamp,media_type,media_product_type,permalink,"
-              "media_url,thumbnail_url,like_count,comments_count")
+              "media_url,thumbnail_url,like_count,comments_count,children{id}")
     posts, pagina = [], _get(f"{IG_USER_ID}/media", token, fields=campos, limit=50)
     while True:
         fim = False
@@ -211,6 +304,48 @@ def _publico(token):
     paises = sorted(([d[0], v] for d, v in quebra("country")), key=lambda x: -x[1])
     idade = [[d[0], d[1], v] for d, v in quebra("age,gender")]
     return {"cidades": cidades[:12], "paises": paises[:10], "idade_genero": idade}
+
+
+def _uma_referencia(token, usuario):
+    campos = (f"business_discovery.username({usuario}){{username,name,followers_count,media_count,profile_picture_url,"
+              f"media.limit({POSTS_POR_REFERENCIA}){{caption,like_count,comments_count,media_type,media_product_type,"
+              f"permalink,timestamp,media_url,thumbnail_url}}}}")
+    b = _get(IG_USER_ID, token, fields=campos)["business_discovery"]
+    seg = b.get("followers_count") or 0
+    posts = []
+    for p in b.get("media", {}).get("data", []):
+        tema, temas, tipo, tipos = classificar(p.get("caption"))
+        curt, com = p.get("like_count"), p.get("comments_count") or 0
+        quando = datetime.strptime(p["timestamp"], "%Y-%m-%dT%H:%M:%S%z").astimezone(BRASILIA)
+        posts.append({
+            "data": quando.strftime("%Y-%m-%dT%H:%M"),
+            "formato": _formato(p),
+            "legenda": " ".join((p.get("caption") or "").split())[:300],
+            "imagem": p.get("thumbnail_url") or p.get("media_url"),
+            "link": p.get("permalink"),
+            "curtidas": curt,
+            "comentarios": com,
+            "taxa": ((curt or 0) + com) / seg if seg and curt is not None else None,
+            "tema": tema,
+            "temas": temas,
+            "tipo": tipo,
+            "tipos": tipos,
+        })
+    return {"usuario": b.get("username", usuario), "nome": b.get("name"), "seguidores": seg,
+            "total_posts": b.get("media_count"), "foto": b.get("profile_picture_url"), "posts": posts}
+
+
+@st.cache_data(ttl=12 * 3600, show_spinner=False)
+def carregar_referencias(token, usuarios):
+    with ThreadPoolExecutor(max_workers=5) as ex:
+        futuros = {u: ex.submit(_uma_referencia, token, u) for u in usuarios}
+    saida, falhas = [], []
+    for u, f in futuros.items():
+        try:
+            saida.append(f.result())
+        except ErroMeta:
+            falhas.append(u)
+    return {"perfis": saida, "falhas": falhas}
 
 
 @st.cache_data(ttl=3 * 3600, show_spinner=False)
@@ -246,7 +381,16 @@ def carregar(token):
         quando = datetime.strptime(p["timestamp"], "%Y-%m-%dT%H:%M:%S%z").astimezone(BRASILIA)
         alc, inter = ins.get("reach"), ins.get("total_interactions")
         reels_ms = ins.get("ig_reels_avg_watch_time")
+        tema, temas, tipo, tipos = classificar(p.get("caption"))
+        attr = atributos(p.get("caption"))
+        n_fotos = len(p.get("children", {}).get("data", [])) if p.get("media_type") == "CAROUSEL_ALBUM" else None
         posts.append({
+            "tema": tema,
+            "temas": temas,
+            "tipo": tipo,
+            "tipos": tipos,
+            "n_fotos": n_fotos,
+            **attr,
             "id": p["id"],
             "data": quando.strftime("%Y-%m-%dT%H:%M"),
             "formato": _formato(p),
@@ -303,7 +447,7 @@ ESQUELETO = """
     <div class="esq" style="height:110px"></div><div class="esq" style="height:110px"></div>
   </div>
   <div class="esq" style="height:280px;margin-top:18px"></div>
-  <div class="esq-txt">Buscando as métricas do @institutocerrados na Meta… (a primeira carga leva uns 30 segundos)</div>
+  <div class="esq-txt">Buscando as métricas do @institutocerrados na Meta… (depois de algumas horas sem acesso, a primeira carga pode levar até 1 minuto)</div>
 </div>
 """
 
@@ -347,11 +491,25 @@ def main():
 
     lugar = st.empty()
     lugar.markdown(ESQUELETO, unsafe_allow_html=True)
-    try:
-        dados = carregar(token)
-    except ErroMeta as e:
-        lugar.error(f"Não foi possível ler os dados da Meta. {e}")
-        st.stop()
+    # As duas buscas são independentes: rodam em paralelo para encurtar a
+    # primeira carga depois que o cache expira.
+    ctx = get_script_run_ctx()
+    with ThreadPoolExecutor(max_workers=2) as ex:
+        def com_contexto(fn, *args):
+            add_script_run_ctx(threading.current_thread(), ctx)
+            return fn(*args)
+        f_dados = ex.submit(com_contexto, carregar, token)
+        f_refs = ex.submit(com_contexto, carregar_referencias, token, tuple(REFERENCIAS))
+        try:
+            dados = f_dados.result()
+        except ErroMeta as e:
+            lugar.error(f"Não foi possível ler os dados da Meta. {e}")
+            st.stop()
+        try:
+            refs = f_refs.result()
+        except ErroMeta:
+            refs = {"perfis": [], "falhas": list(REFERENCIAS)}
+    dados = dict(dados, referencias=refs, temas_lista=list(TEMAS) + ["Outros"], tipos_lista=list(TIPOS) + ["Outros"])
 
     modelo = (BASE / "painel.html").read_text(encoding="utf-8")
     embutido = json.dumps(dados, ensure_ascii=False).replace("</", "<\\/")
